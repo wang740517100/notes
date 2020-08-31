@@ -1,0 +1,213 @@
+BeanDefinition: 存储bean标签的信息如bean的作用域、bean的注入模型、bean是否是懒加载等, 用来生成bean实例
+BeanFactoryPostProcessor：BeanFactory后置处理器, 是对BeanDefinition对象进行修改。（）
+BeanPostProcessor：Bean后置处理器，是对生成的Bean对象进行修改。
+
+普通类的实例化过程:
+加载(方法区) -> 验证(方法区) -> 准备(方法区) ->  解析(方法区) -> 初始化(堆)
+
+bean的生命周期:
+实例化 -> 属性注入 -> 初始化 -> 销毁
+
+bean的实例化和初始化: 初始化不可干预, 实例化可以干预
+BeanFactoryPostProcessor是spring提供的一个扩展点可以让程序员干预bean工厂的初始化过程, beanFactory怎么new出来的(实例化)
+BeanFactoryPostProcessor是干预不了的, 但是beanFactory new出来之后各种属性的填充或者修改(初始化)是可以干预的
+
+BeanFactory是一个接口
+BeanFactory bf = new ClassPathXmlApplicationContext("student.xml");
+
+实现BeanFactory的类产生的bean是FactoryBean
+Student studentBean = (Student) bf.getBean("studentFactoryBean");
+
+
+RestTemplate
+RedisTemplate
+RabbitTemplate
+ElasticsearchTemplate
+---------------------------------- spring的循环依赖 ----------------------------------
+class A {
+	@Autowired
+	A a;
+
+	@PostConstruct
+    public void testa () {
+        System.out.println("------a PostConstruct--------");
+    }
+}
+
+class B {
+	@Autowired
+	B b;
+
+	@PostConstruct
+    public void testb () {
+        System.out.println("------b PostConstruct--------");
+    }
+}
+
+开始创建bean ——> 调用构造方法反射实例化A(对象属性是没有注入) ——> 将A放入到创建中缓存池
+
+——> A开始注入属性，发现B ——> getBean()发现单例缓存池中没有B ——> 调用构造方法反射实例化B
+
+——> B开始注入属性，发现A ——> getBean()发现单例缓存池中没有B，在创建中缓存池中有
+
+——> B注入属性完成，放到单例缓存池中 ——> A从单例缓存池中取出B继续进行属性注入完成
+
+
+
+
+// 单例池
+private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+
+// beanFactor缓存map
+private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+
+// 用来缓存循环引用时 beanFactor 创建的 bean
+private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
+
+// 创建中缓存map
+private final Set<String> singletonsCurrentlyInCreation =
+			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
+
+private volatile List<String> beanDefinitionNames = new ArrayList<>(256);
+
+private final Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
+
+
+// singletonObjects -> 一级缓存：我们说的spring容器，存的是完整的bean
+// singletonFactories -> 二级缓存(存的是对象)：为什么要是用工厂获取bean？因为bean有可能被改变，如AOP。
+// earlySingletonObjects 三级缓存(存的是对象)：性能问题，防止二级缓存的工厂重复创建bean
+protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+    // 从单例缓存map中获取bean
+	Object singletonObject = this.singletonObjects.get(beanName);
+	if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+		synchronized (this.singletonObjects) {
+			singletonObject = this.earlySingletonObjects.get(beanName);
+			if (singletonObject == null && allowEarlyReference) {
+				ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+				if (singletonFactory != null) {
+
+					singletonObject = singletonFactory.getObject();
+					// 放入到三级缓存中
+					this.earlySingletonObjects.put(beanName, singletonObject);
+
+					// 从二级缓存清除
+					this.singletonFactories.remove(beanName);
+				}
+			}
+		}
+	}
+	return singletonObject;
+}
+
+// 判断当前bean是不是在创建中
+public boolean isSingletonCurrentlyInCreation(String beanName) {
+	return this.singletonsCurrentlyInCreation.contains(beanName);
+}
+
+org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#doCreateBean
+
+// 判断是否允许循环依赖
+boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
+				isSingletonCurrentlyInCreation(beanName));
+
+https://blog.csdn.net/java_lyvee/article/details/101793774
+
+
+----------------------------------  spring的事务和回滚机制 ----------------------------------
+两种方式: 1)声明式事务; 2)编程式事务;
+
+事务四个特性: atomicity(原子性) consistency(一致性) isolation(隔离性) durability(持久性)
+
+五种隔离机制:
+isolation_default: 默认采用数据库隔离机制
+isolation_read_uncommited: 读未提交
+isolation_read_commited: 读已提交，解决脏读
+isolation_repeatable_red: 可重复读，解决重复读
+isolation_serializable: 串行化，解决幻读
+
+脏读: 一个事务第二次读到了另一个事务未提交的数据, 针对未提交脏数据的情况。
+重复读: 一个事务第二次读到了另一个事务已提交的数据, 针对两次数据值不一致的情况。
+幻读: 一个事务第二次读到了另一个事务已提交的数据, 针对数据条数的变化。
+
+propagation_required: 如果存在一个事务, 则支持当前事务。如果没有事务则开启一个新的事务。
+propagation_supports: 如果存在一个事务, 支持当前事务。如果没有事务, 则非事务的执行
+propagation_mandatory: 如果已经存在一个事务, 支持当前事务。如果没有一个活动的事务, 则抛出异常。
+propagation_requires_new: 它会开启一个新的事务。如果一个事务已经存在, 则先将这个存在的事务挂起。(JtaTransactionManager、外层异常不会导致里层回滚)
+propagation_not_supported: 总是非事务地执行, 并挂起任何存在的事务。(JtaTransactionManager)
+propagation_never: 总是非事务地执行, 如果存在一个活动事务, 则抛出异常。
+propagation_nested: 如果一个活动的事务存在, 则运行在一个嵌套的事务中。如果没有活动事务, 则按 PROPAGATION_REQUIRED 执行。
+
+
+事务属性: 事务的传播行为, 事务的隔离级别, 事务的超时值, 事务只读标志
+事务的四种属性, 仅供诸位学习参考：
+Spring在 TransactionDefinition 接口中定义这些属性,以供 PlatfromTransactionManager 使用,PlatfromTransactionManager 是Spring事务管理的核心接口。
+public interface TransactionDefinition {
+  int getPropagationBehavior();  //返回事务的传播行为。
+  int getIsolationLevel();  //返回事务的隔离级别,事务管理器根据它来控制另外一个事务可以看到本事务内的哪些数据。
+  int getTimeout();  //返回事务必须在多少秒内完成。
+  boolean isReadOnly();  //事务是否只读,事务管理器能够根据这个返回值进行优化，确保事务是只读的。
+}
+
+----------------------------------  spring的AOP原理 ----------------------------------
+1)引入依赖包
+
+2)定义annotation
+@Target(ElementType.METHOD)
+//范围
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface RecordOrderPreventRepeat {
+}
+
+3)定义切面类
+@Aspect
+@Slf4j
+@Component
+public class PreventRecordRepeatAspect {
+
+	// 定义切点
+    @Pointcut("@annotation(com.to8to.fi.acc.annotation.RecordOrderPreventRepeat)")
+    public void preventRepeatAspect() {
+    }
+
+	// 写进入切点前方法
+    @Before("preventRepeatAspect()")
+    public void preventRepeat(JoinPoint joinPoint) {
+		// 业务逻辑
+	}
+}
+
+// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+
+
+InvocationHandler handler = new PersonInvocationHandler<Person>(person);
+        Person workProxy = (Person) Proxy.newProxyInstance(Person.class.getClassLoader(),
+                new Class<?>[]{Person.class}, handler);
+动态代理: https://mp.weixin.qq.com/s/P-nrfyyWfRUurKgF4dnugA
+
+----------------------------------  spring的bean生命周期 ----------------------------------
+
+org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#createBean
+(java.lang.String, org.springframework.beans.factory.support.RootBeanDefinition, java.lang.Object[])
+
+实例化 Instantiation
+属性赋值 Populate
+初始化 Initialization
+销毁 Destruction
+
+
+----------------------------------  @Autowired 与 @Resource的区别 ----------------------------------
+https://blog.csdn.net/weixin_40423597/article/details/80643990
+
+提供方：@Autowired是由org.springframework.beans.factory.annotation.Autowired提供，
+换句话说就是由Spring提供；@Resource是由javax.annotation.Resource提供，即J2EE提供，需要JDK1.6及以上。
+
+注入方式：@Autowired只按照byType 注入；@Resource默认按byName自动注入，也提供按照byType 注入；
+
+注意：他们的后置处理器不同
+
+
+
+获取spring bean的方式
+ApplicationContext.getBean(name 或者 clazz)

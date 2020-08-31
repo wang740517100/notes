@@ -1,0 +1,158 @@
+-------------------------------- elasticsearch是什么: 分布式、近实时的搜索引擎 --------------------------------
+index       ->  type    ->  mapping      ->  docment ->   field
+一类对象的表 —>  一种类型 ->  type的表结构  ->  一条数据 ->  docment中一个字段的值
+
+shard: 每个shard存放不同的数据
+replication: shard的副本,做备份和主从切换
+ps:
+1)es不支持shard扩容, 原因是使用的简单hash路由决定
+2)replication也可以接收查询请求做负载均衡, 但是会有数据延迟
+
+倒排索引和正排索引:
+正排索引
+a: my book is lost
+b: i want to buy that book
+倒排索引
+----  a   b
+book: 1   1
+lost: 1   0
+buy:  0   1
+
+--------------------------------  简单语法 --------------------------------
+简单的索引操作:
+PUT /test_index?type 创建索引
+DELETE /test_index?type 删除索引
+
+GET /test_index/product/id
+GET /test_index/product/_search
+
+PUT /test_index/product/1
+{
+    "name": "testName"
+}
+
+DELETE /test_index/product/1
+
+
+bulk语法: 一般一次执行5000条
+POST /_bulk
+{ "delete": { "_index": "test_index", "_type": "test_type", "_id": "3" }}
+
+{ "create": { "_index": "test_index", "_type": "test_type", "_id": "12" }}
+{ "test_field": "test12" }
+
+{ "index": { "_index": "test_index", "_type": "test_type", "_id": "2" }}
+{ "test_field": "replaced test2" }
+
+{ "update": { "_index": "test_index", "_type": "test_type", "_id": "1", "_retry_on_conflict" : 3} }
+{ "doc" : {"test_field2" : "bulk test1"} }
+
+mget语法:
+GET / _mget {
+	"docs": [{
+			"_index": "test_index1",
+			"_type": "test_type1",
+			"_id": 1
+		},
+		{
+			"_index": "test_index2",
+			"_type": "test_type2",
+			"_id": 2
+		}
+	]
+}
+
+分页查询
+GET /test_index/product/_search
+{
+    "query": { "match_all": {} },
+    "from": 1,
+    "size": 1
+}
+
+滚动查询(scorll)、filter、高亮搜索结果、桶聚合(buckets)和聚合计算(aggregations)等等
+
+
+-------------------------------- 增删改查原理 --------------------------------
+全文检索:
+1)客户端发送请求到某个coordinate上, coordinate将请求发送到所有shard
+2)每个shard或replication进行本地检索, 进行打分返回给coordinate
+3)coordinate将所有返回整理排序返回到客户端
+
+简单查询:
+1)客户端发送请求到某个coordinate上, coordinate将请求hash到对应的shard或replication。
+2)分片查询到对应索引数据返回到coordinate上，然后返回到客户端。
+
+增加原理:
+clinet ->  coordinate -> shard -> (buffer 和 translog  -> segment)
+1)每隔一秒钟(近实时), 数据从buffer里被reflush到segment里并刷入os cache
+2)进入os cahche就可以供search使用, 内存buffer被清空
+3)当segment file system满后系统会将里面的数据fsyn到磁盘里
+
+translog的reflush操作(相当于redis的aof rewrite)
+1)将buffer的数据reflush到segment并刷入os cache
+2)清空buffer, 打开segment供查询使用(不再写入)
+3)提交commit point(所有index segment信息)到磁盘
+4)当index segment被fsync强制刷到磁盘上以后, os cache就会被打开供查询使用
+5)清空translog
+
+删除原理:
+1)客户端发送删除请求，服务端会将其标记为deleted
+2)当segment大到一定程度时会执行merge操作, 将标记为deleted的数据删除
+
+更新原理: (基于version的cas更新)
+1)es会将老的document标记为deleted, 然后复制新增旧的文档
+2)当segment大到一定程度时会执行merge操作, 将标记为deleted的数据删除
+
+
+
+-------------------------------- 怎么优化es的查询性能 --------------------------------
+将索引数据都放在filesystem cache(os cache)里面
+
+冷热分离:
+将冷数据和热数据分别建立不同的索引(机器)存储
+
+缓存预热:
+将冷数据放在hbase里面, 然后用缓存预热加载到es里面
+
+-------------------------------- es的扩容 --------------------------------
+增加机器的数量和replication的数量。
+
+线上部署情况:
+- 5台机器,每台机器6核64G,集群总内存320g。
+- 日增量数据2000万条,日增量数据500M左右。月增量数据大概6亿,15G,目前运行了几个月,目前数据在100G左右。
+- 目前财务组索引两个, 一共5000w数据,分配了5个shard。
+
+--------------------------------  es的分布式和高可用 --------------------------------
+脑裂问题的解决：
+
+写一致性问题：
+我们在发送任何一个增删改操作的时候, 比如说 put /index/type/id?consistency=quorum
+consistency:
+- one：要求我们这个写操作, 只要有一个primary shard是active活跃可用的, 就可以执行
+- all：要求我们这个写操作, 必须所有的primary shard和replica shard都是活跃的, 才可以执行这个写操作
+- quorum：默认的值, 要求所有的shard中, 必须是大部分的shard都是活跃的, 可用的, 才可以执行这个写操作
+
+quorum机制, 写之前必须确保大多数shard都可用
+- 当number_of_replicas > 1 时才生效
+- quroum = int( (primary + number_of_replicas) / 2 ) + 1
+举个例子，3个primary shard，number_of_replicas=1, 总共有3 + 3 * 1 = 6个shard，quorum = int( (3 + 1) / 2 ) + 1 = 3
+所以要求6个shard中至少有3个shard是active状态的, 才可以执行这个写操作
+
+
+--------------------------------  es的relevance score打分算法 --------------------------------
+
+- boolean model: 不打分数,为了减少后续要计算的doc的数量,提升性能
+  bool --> must/must not/should --> 过滤 --> 包含 / 不包含 / 可能包含
+
+- TF/IDF:单个term在doc中的分数
+  Term frequency：搜索文本中的各个词条在field文本中出现了多少次，出现次数越多，就越相关。
+  Inverse document frequency：搜索文本中的各个词条在整个索引的所有文档中出现了多少次，出现的次数越多，就越不相关。
+  length norm: hello搜索的那个field的长度，field长度越长，给的相关度评分越低; field长度越短，给的相关度评分越高。
+
+- vector space model: 向量空间模型，多个term对一个doc的总分数
+  hello world --> es会根据hello world在所有doc中的评分情况，计算出一个query vector
+
+
+
+

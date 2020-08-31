@@ -1,0 +1,189 @@
+---------------------------------------------- io  ----------------------------------------------------------
+输出流:
+OutputStream
+
+FileOutputStream ByteArrayOutputStream FilterOutputStream ObjectOutputStream PipedOutputStream
+
+DataOutputStream BufferdOutputStream PrintStream
+
+
+输入流:
+InputStream
+
+FileInputStream ByteArrayInputStream FilterInputStream ObjectInputStream PipedInputStream  SequenceInputStream StringBufferdInputStream
+
+DataInputStream BufferdInputStream LineNumberInputStream PushbackInputStream
+
+InputStream
+字符流处理的单元为2个字节的Unicode字符，操作字符、字符数组或字符串，
+字节流处理单元为1个字节，操作字节和字节数组。
+所以字符流是由Java虚拟机将字节转化为2个字节的Unicode字符为单位的字符而成的，
+所以它对多国语言支持性比较好！
+如果是音频文件、图片、歌曲，就用字节流好点，
+如果是关系到中文（文本）的，用字符流好点
+
+面向字节流的InputStream和OutputStream
+面向字符的Reader和Writer: InputStreamReader 和 InputStreamWriter
+
+装饰模式(Decorator):
+抽象构建角色(Component): 抽象类接口
+具体构件角色(Concrete Component): 接收附加责任的类
+装饰角色(Decorator): 持有构件的引用，并定义一个与抽象构件接口一致的接口
+具体装饰角色(Concrete Decorator): 负责给构件对象贴上附加责任
+
+
+public abstract class Component {
+    public abstract void doSomething();
+}
+
+public class ConcreteComponent extends Component {
+    @Override
+    public void doSomething() {
+    }
+}
+
+public abstract class Decorator extends Component {
+    private Component component = null;
+    public Decorator(Component component) {
+        this.component = component;
+    }
+    public void doSomething() {
+        if (component != null) {
+            component.doSomething();
+        }
+    }
+}
+
+public class ConcreteDecorator extends Decorator {
+    public ConcreteDecorator(Component component) {
+        super(component);
+    }
+    public void addSomething() {
+        doing(); //装饰事情
+        super.doSomething();
+    }
+    public void doing() {}
+}
+
+
+装饰模式与集成的对比: 继承是静态扩展类的功能, 装饰模式是动态扩展对象的功能,
+不会导致产生很多子类，使用更加灵活。
+
+
+
+------------------------------------------------  nio  ----------------------------------------------------------
+
+io: 面向流编程, 一个流要么是输入流要么是输出流
+
+nio: 面向Buffer编程
+3个核心概念: Selector, Channel, Buffer
+
+- Buffer实际就是个数组, 所有数据的读写都是通过Buffer进行的
+- Java的7中原生类型都有对应的Buffer, IntBuffer/LongBuffer/ByteBuffer/ShortBuffer/FloatBuffer/DoubleBuffer/CharBuffer
+- Chanel指的是可以向其写入数据或是从中读取数据的对象, 它类似于io中的stream, 与Stream不同的是, Channel是双向的, 可以更好反应操作系统的真实情况。
+
+position: 一次读取或写入的位置
+capacity: Buffer数组的容量
+limit: 最后数据下标的下一位
+
+0 <= mark <= position <= limit <= capacity
+
+
+proto buffer
+apache thift
+grpc
+
+1、堆外内存和零拷贝。
+ByteBuffer a =  ByteBuffer.allocate(55);
+public static ByteBuffer allocate(int capacity) {
+    if (capacity < 0)
+        throw new IllegalArgumentException();
+    return new HeapByteBuffer(capacity, capacity);
+}
+
+
+ByteBuffer b =  ByteBuffer.allocateDirect(55);
+public static ByteBuffer allocateDirect(int capacity) {
+    return new DirectByteBuffer(capacity);
+}
+
+DirectByteBuffer(int cap) {                   // package-private
+    super(-1, 0, cap, cap);
+    boolean pa = VM.isDirectMemoryPageAligned();
+    int ps = Bits.pageSize();
+    long size = Math.max(1L, (long)cap + (pa ? ps : 0));
+    Bits.reserveMemory(size, cap);
+
+    long base = 0;
+    try {
+        base = unsafe.allocateMemory(size);
+    } catch (OutOfMemoryError x) {
+        Bits.unreserveMemory(size, cap);
+        throw x;
+    }
+    unsafe.setMemory(base, size, (byte) 0);
+    if (pa && (base % ps != 0)) {
+        // Round up to page boundary
+        address = base + ps - (base & (ps - 1));
+    } else {
+        address = base;
+    }
+    cleaner = Cleaner.create(this, new Deallocator(base, size, cap));
+    att = null;
+}
+
+allocate 是在JVM的堆里面开一块内存存储文件流数组，当Java程序接收到外部传来的数据时，
+首先是被系统内存所获取，然后在由系统内存复制到JVM内存中供Java程序使用。
+
+allocateDirect 是直接在内存中存储的，能够省去系统内存复制到JVM内存这一步操作，效率上会有所提高。
+可是系统级内存的分配比起JVM内存的分配要耗时得多，所以并非不论什么时候allocateDirect的操作效率都
+是最高的。当操作数据量非常小时，两种分配方式操作使用时间基本是同样的，第一种方式有时可能会更快，
+可是当数据量非常大时，另外一种方式会远远大于第一种的分配方式。
+
+
+2、Scattering 与 Gathering 的使用。
+Scaterring 撒开,分散,将来自于一个Channel的数据分散到多个Buffer当中,一个满了就用下一个,可以实现数据的分门别类。
+这样就省去了解析的时间,比如一个消息有三个部分, 第一部分是头信息, 第二部分是协议信息, 第三部分是消息体。可以把这
+三个消息分别放到不同的Ｂuffer当中。
+
+Gatering 把多个汇总成一个,将要写到Channel的数据。
+
+
+8、传统IO和零拷贝原理：
+传统IO发送文件流:
+1)用户空间(user space)向kernel space发送一个read()操作(syscall),操作系统(linux/unix)切换为内核空间(kernel space)。
+2)内核空间请求(ask for data)读取磁盘(hardware)上的文件数据, 通过DMA(Direct Memory Access)方式将磁盘上的文件数据复制到内核缓存(kernel buffer)中。
+4)内核空间再,并切换到用户空间。将内核缓存里的数据复制到用户缓存(user buffer)中
+5)用户空间通过while读取byte数组里的数据, 写入到内核Socket缓存(socket buffer)里, 并切换为内核空间。
+6)内核空间将内核Socket缓存里的数据发送到协议引擎(protocol engine)里。
+7)内核空间切换为用户空间, 返回发送成功信息。
+上面一共有4次用户空间和内核空间的上下文切换, 5次文件的复制。
+
+零拷贝：
+1)用户空间想内核空间发送一个零拷贝的异步请求(syscall sendfile)。
+2)内核空间请求(ask for data)读取磁盘(hardware)上的文件数据, 通过DMA(Direct Memory Access)方式将磁盘上的文件数据复制到内核缓存(kernel buffer)中。
+3)内核空间将内核缓存中文件数据的地址和长度复制(Scaterring)到内核Socket缓存中。
+4)内核空间通过内核Socket缓存中的指针信息去内核缓存中寻找信息复制(Gathering)到协议引擎里。
+上面一共有2次用户空间和内核空间的上下文切换, 2次文件的复制。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

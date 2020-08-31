@@ -1,0 +1,108 @@
+rabbitmq的两种集群模式:
+1)普通集群模式: queue里面的元数据只存储在一个节点,其它节点通过转发访问,节点挂掉数据就丢了。
+2)镜像集群模式: 每个节点都会保存queue的元数据, 这就限制了rabbitmq不能支持大数据量。
+
+rabbitmq的两种消息协议:
+MQTT: 二进制协议、轻量级、适合用于不稳定的网络环境, 一般用于物联网应用中。
+AMQP: AMQP是由各种数据帧组成的协议, 特性和功能强大(如五种模式、事务等)
+帧: 头(header,7个字节) + 负载(payload) + frame-end
+
+
+rabbitmq的五种工作模式:
+简单模式:   p  ->  queue  ->  c
+工作模式:   p  ->  queue  ->  c1、c2
+
+发布订阅模式:
+fanout: 广播给所有的queue
+p  ->  exchanger  ->   queue1  ->  c1
+			      ->   queue2  ->  c2
+routing: 根据 route key 发给对应 queue
+p  ->  exchanger  (routing key: info)  ->   queue1  ->  c1
+			      (routing key: error) ->   queue2  ->  c2
+			      (routing key: warn)  ->   queue3  ->  c3
+topic: 根据模糊 route key 发给对应 queue
+p  ->  exchanger  (routing key: order.*)  ->   queue1  ->  c1
+			      (routing key: goods.*) ->   queue2  ->  c2
+ps: '#'匹配一个或多个词, 符号'*'仅匹配一个词
+
+
+--------------------------------------rabbitmq的优缺点-------------------------------------------
+MQ的解决了什么问题:
+1)解耦:  减少服务对接, 利于服务维护。eg: 账户变动通知各种上游, 如自动续费,对账等。
+2)削峰: 减轻高峰时数据库压力。eg: 用户的点赞操作。
+3)异步: 减少接口响应时间。 eg: 退合作设置返固保金时间。
+
+rabbitmq的问题:
+1)数据一致性问题
+2)稳定性: 数据丢失
+3)重复消费
+4)消费的顺序
+5)增大系统的复杂性
+
+消息重复消费解决方案: 设计接口的幂等性
+1)接口自然幂等性
+2)代码逻辑查询判断,如果消费过就不再消费
+3)设置数据库唯一索引
+
+消息丢失解决方案
+1)生产者丢失: (1)事务回滚重发, 缺点是是阻塞,不能发别的; (2)channel设置confirm模式,mq没接收到会回调告诉生产者
+2)mq的queue丢失(宕机): (1)开启持久化模式,在持久化后回调消费者;
+3)消费者丢失(宕机): (1)关闭autoAck, 在消费完后手动ack;
+ps: kafka消息丢失怎么办: 开启主从同步, 保证leader至少同步到一个follower回调生产者。
+
+消息顺序性解决方案
+1)建立多个queue
+2)一个消费者对应一个queue
+3)将要保证顺序的消息只发到一个queue里面
+ps: kafka消息顺序性:
+1)写到一个partition的消息是有序的
+2)将数据id路由到一个patition里面
+3)消费者多线程处理数据乱序,建立多个内存队列,将id路由到一个内存队列里面
+
+消息积压: rabbitmq消息积压几百万,几小时怎么办:
+1)如果过期了手动查询出来重新放到queue里面去
+2)没有设置过期时间,修改代码拿到queue里面的消息丢掉,晚上再查出来放进去消费
+ps: kafka消息积压
+1)消费者挂了,快速恢复消费者,将数据取出来放到十个的parition里面
+2)部署十台机器服务去消费十个partion里面的数据
+
+
+消息队列怎么设计
+1)支持扩容做分布式,每个queue只放一部分数据, 开启主从同步
+2)mq要不要做持久化,持久化到磁盘
+3)mq挂了数据丢失怎么办:(1)mq的ack机制;(2)搞副本做主从切换
+
+
+--------------------------------------- 几种MQ的对比 ----------------------------------------------
+rabbitmq:
+优点: 1)延迟低,us级别响应; 2)万级别吞吐量; 3)稳定性好,基本不丢消息; 4)监控页面好; 5)社区活跃度高;
+缺点: 1)不是分布式,无法支撑大数据量; 2)erlang编写,不利于内部扩展;
+
+activemq:
+优点: 1)ms级别响应; 2)万级别吞吐量; 3)一般用于异步和解耦;
+缺点: 1)不是分布式,无法支撑大数据量; 2)社区不活跃; 3)稳定性没那么好,有时会丢消息;
+
+
+rocketmq:
+优点: 1)支持分布式扩展,支持大数据量; 2)十万级别吞吐量; 3)java编写易于开发;
+缺点: 1)topic上升吞吐量会下降; 2)阿里组件,被弃用不好维护;
+
+kafka:
+优点: 1)支持分布式扩展,支持大数据量;c2)十万级别吞吐量; 3)大数据领域标配;
+缺点: 1)功能简单; 2)topic上升吞吐量会下降;
+
+
+------------------------------------------------------------------------------------------
+
+RabbitTemplate.convertAndSend
+@Override
+public void convertAndSend(String routingKey, final Object object) throws AmqpException {
+    convertAndSend(this.exchange, routingKey, object, (CorrelationData) null);
+}
+
+RabbitmqInterceptor
+
+@RabbitListener(containerFactory = ContainerNames.DEFAULT_CONTAINER_NAME,
+    queuesToDeclare = {@Queue(name = "eda_queue_t8t-dcp-ecs_initGuaranteeTime", durable = "true")})
+
+线上问题: 可靠消息生产者确认超时乱加事务的数据一致性问题

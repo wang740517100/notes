@@ -1,0 +1,273 @@
+1、缓存双写一致性设计:
+
+自定义线程池: MaterialThreadPool  单例 在应用启动时getInstance
+线程池属性1:
+使用 newFixedThreadPool, 10个核心线程，适用于任务量比较固定但耗时长的任务
+默认使用 LinkedBlockingQueue, 基于链表的阻塞队列, size无线大, 内部采用读写锁实现生产消费同时进行
+默认使用 AbortPolicy, 队列满了就抛出异常
+
+操作：
+1)初始化10个 ArrayBlockingQueue<Request> 放在自定义内存队列里面。
+2)执行MaterialTask, 开启10个线程监听 10个自定义内存队列。
+
+
+MaterialTask implements Callable
+不断轮询队列里面有没有更新或者查询操作,如果有,就消费
+
+自定义内存队列: MemoryQueue 单例
+List<ArrayBlockingQueue<Request>> queues = Lists.newArrayList<>();
+
+public interface Request {
+    Long getSpuId();
+    void process();
+    boolean isRefreshRedis();
+}
+UpdateRequest implements Request {
+    private Long spuId;
+    public void process() {
+      1、删除缓存
+      2、更新商品
+    }
+}
+QueryRequest implements Request {
+    private Long spuId;
+    public void process() {
+      1、查询商品
+      2、添加缓存
+    }
+}
+
+查询
+1)组装查询请求QueryRequest。
+2)将查询请求经过hash路由到对应自定义内存队列里面。
+3)循环每隔20ms去缓存里查一次, 设置超时时间 200ms。
+4)去数据库查询，如果有就更新到缓存返回，没有直接返回。
+更新
+1)组装查询请求 UpdateRequest。
+2)将查询请求经过hash路由到对应自定义内存队列里面。
+
+
+
+2、状态机模式
+public interface Node {
+    void confirmIntention();
+    void changeIntention();
+    void changeNodeDetail();
+    void dispatchOrder();
+    void open();
+    void close();
+}
+
+0未拨打、1已联系、2派单、3到店、4签约、5审批、6放款
+
+
+3、知识点
+HikariCP 目前最快的连接池
+
+sc的序列化工具:
+Jackson 的 ObjectMapper  mapper.readValue(content, User.class);
+FastJson 的 JSON.parseObject(content, User.class);
+google 的 proto buffer 和 grpc
+apache 的 thift
+
+
+注册中心:
+Eureka 集群节点是平等的，客户端可以从任意一节点拉取数据，每一节点数据都是一样的。保证了可用性，降低了一致性。
+ZK 多主从部署每个主从数据不一样，客户端只能访问master节点，master挂掉出现选举时是不可用的。保证了强一致性，降低了可用性。
+
+Feign: 可以把Rest的请求进行隐藏，伪装成类似SpringMVC的Controller一样。RestTemplate
+你不用再自己拼接url，拼接参数等等操作，一切都交给Feign去做。封装了ribbon负载均衡和Hystix断路器。
+
+Zuul网关：pre routing error post
+
+@Component @Repository @Service @Controller
+@Resource @Autowired
+https://blog.csdn.net/weixin_40423597/article/details/80643990
+
+
+4、error 和 exeception 的区别。
+object
+throwable
+error exeception
+error     checked exeception    runtimeExeception
+oom sof    ioexeception         npe
+
+5、位运算  & ^ >>>  << >>
+
+
+6、排序
+Collections.sort() 使用MergeSort JDK1.6
+Collections.sort() 使用TimSort JDK1.7
+
+
+7、object中8个方法
+clone(), equals(), hashCode(), toString(), notify(), notifyAll(),
+wait(), finalize(), getClass()
+
+8、匿名内部类只能访问外部类的Final变量. Java 8更加智能：如果局部变量被匿名内部类访问，
+  那么该局部变量相当于自动使用了final修饰。
+
+9、编码知识
+ASCII (American Standard Code for Information Interchange)
+7bit, 最多128个字符, 只适用美国的字符。
+
+ISO-8859-1
+8bit, 最多256个字符, 在ASCII上的扩展(向下兼容), 把一些西方国家字符添加进来。
+
+gb2312
+16bit, 最多65536个字符, 国标, 一些常用中文字符。
+
+gbk
+16bit, 在gb2312里补全生僻字。
+
+gb18030
+16bit, 所有中文字符的标准。
+
+big5
+16bit, 台湾繁体字标准。
+
+unicode
+16bit, 全球通用字符标准, 涵盖所有国家的字符标准。
+
+utf-8/utf-16/utf-32
+- unicode的实现方式, unicode是一种编码标准, utf是一种存储标准。
+- utf-16(utf-16le, utf-16be)
+- utf-8是一种常用的存储方式, 因为如果使用unicode存储对于美国等西方国家浪费存储空间。
+- utf-8中汉字是占3个字节, 不同国家的字符字节数不一样
+
+
+1、道: 学习底层原理是为了体会思路。
+2、本地事务要缩小代码的粒度。
+3、分布式事务一般不要使用, 使用了也不要使用回滚。
+
+
+util下的工具类中怎么直接使用bean：
+@Component
+public class AutowireStaticSmartInitializingSingleton implements SmartInitializingSingleton {
+
+    @Autowired
+    private AutowireCapableBeanFactory beanFactory;
+
+    /**
+     * 当所有的单例Bena初始化完成后，对static静态成员进行赋值
+     */
+    @Override
+    public void afterSingletonsInstantiated() {
+        // 因为是给static静态属性赋值，因此这里new一个实例做注入是可行的
+        beanFactory.autowireBean(new UserHelper());
+    }
+}
+
+
+public class UserHelper {
+
+    static UCClient ucClient;
+
+    @Autowired
+    public void setUcClient(UCClient ucClient) {
+        UserHelper.ucClient = ucClient;
+    }
+
+    public static void test() {
+        // ucClient
+    }
+}
+
+
+spring是单例的吗，如何保证线程安全？
+是的，保证线程安全的两个措施
+全局变量和静态变量：若每个线程中对全局变量、静态变量读操作，而无写操作，一般来说这个全局变量是线程安全的。
+若多个线程同时执行写操作，需要考虑线程同步问题，否则影响线程安全
+
+实例变量：使用ThreadLocl保存每个线程的变量副本
+
+
+
+osi七层协议（五层协议）
+应用层(http协议)(包括展示层、会话层)
+传输层(tcp协议, ip + port)
+网络层(ip协议, 网卡/网关, 交换机/子网)
+数据链路层(以太网协议, mac)
+物理层(传输01的电信号、如网线光缆)
+
+浏览器浏览网页
+DNS(domain name system) 域名 -> ip + port
+http包 -> tcp包 -> ip包 -> 以太网包
+
+
+http1.0 -> http1.1 -> http2.0
+http1底层使用的是tcp，只有tcp才有长连接短连接一说
+短连接  假的长连接(短时间内的连接)  长连接(多路复用)
+
+
+用私钥加密的内容只能用对应的公钥解密，反之用公钥加密的内容只能用对应的私钥解密。
+SSO会给客户端发公钥和加密信息，客户端用公钥解密加密信息
+客户端用公钥加密信息发给SSO, SSO用私钥来解密信息
+
+
+线程的设计模式: 模板方法、策略模式
+IO的设计模式: 装饰模式
+NIO的设计模式: 观察者模式(发布/订阅模式)、反应器模式
+Runtime: 单例模式
+
+
+高并发方案:
+1、高性能
+2、高可用
+3、高扩展
+通用的设计方法维度:
+1、纵向扩展: 1)提升单机的硬件性能(内存、cpu核数等); 2)提升单机的软件性能(算法、异步、缓存等);
+2、横向扩展: 分层架构、各层进行水平扩展(无状态水平扩容，有状态做分片路由)
+
+❇ 高性能的实践方案
+1、集群部署，通过负载均衡减轻单机压力。
+2、多级缓存，包括静态数据使用CDN、本地缓存、分布式缓存等，以及对缓存场景中的热点key、缓存穿透、缓存并发、数据一致性等问题的处理。
+3、分库分表和索引优化，以及借助搜索引擎解决复杂查询问题。
+4、考虑NoSQL数据库的使用，比如HBase、TiDB等，但是团队必须熟悉这些组件，且有较强的运维能力。
+5、异步化，将次要流程通过多线程、MQ、甚至延时任务进行异步处理。
+6、限流，需要先考虑业务是否允许限流（比如秒杀场景是允许的），包括前端限流、Nginx接入层的限流、服务端的限流。
+7、对流量进行削峰填谷，通过MQ承接流量。
+8、并发处理，通过多线程将串行逻辑并行化。
+9、预计算，比如抢红包场景，可以提前计算好红包金额缓存起来，发红包时直接使用即可。
+10、缓存预热，通过异步任务提前预热数据到本地缓存或者分布式缓存中。
+11、减少IO次数，比如数据库和缓存的批量读写、RPC的批量接口支持、或者通过冗余数据的方式干掉RPC调用。
+12、减少IO时的数据包大小，包括采用轻量级的通信协议、合适的数据结构、去掉接口中的多余字段、减少缓存key的大小、压缩缓存value等。
+13、程序逻辑优化，比如将大概率阻断执行流程的判断逻辑前置、For循环的计算逻辑优化，或者采用更高效的算法。
+14、各种池化技术的使用和池大小的设置，包括HTTP请求池、线程池（考虑CPU密集型还是IO密集型设置核心参数）、数据库和Redis连接池等。
+15、JVM优化，包括新生代和老年代的大小、GC算法的选择等，尽可能减少GC频率和耗时。
+16、锁选择，读多写少的场景用乐观锁，或者考虑通过分段锁的方式减少锁冲突。
+上述方案无外乎从计算和 IO 两个维度考虑所有可能的优化点，需要有配套的监控系统实时了解当前的性能表现，并支撑你进行性能瓶颈分析，然后再遵循二八原则，抓主要矛盾进行优化。
+
+❇ 高可用的实践方案
+1、对等节点的故障转移，Nginx和服务治理框架均支持一个节点失败后访问另一个节点。
+2、非对等节点的故障转移，通过心跳检测并实施主备切换（比如redis的哨兵模式或者集群模式、MySQL的主从切换等）。
+3、接口层面的超时设置、重试策略和幂等设计。
+4、降级处理：保证核心服务，牺牲非核心服务，必要时进行熔断；或者核心链路出问题时，有备选链路。
+5、限流处理：对超过系统处理能力的请求直接拒绝或者返回错误码。
+6、MQ场景的消息可靠性保证，包括producer端的重试机制、broker侧的持久化、consumer端的ack机制等。
+7、灰度发布，能支持按机器维度进行小流量部署，观察系统日志和业务指标，等运行平稳后再推全量。
+8、监控报警：全方位的监控体系，包括最基础的CPU、内存、磁盘、网络的监控，以及Web服务器、JVM、数据库、各类中间件的监控和业务指标的监控。
+9、灾备演练：类似当前的“混沌工程”，对系统进行一些破坏性手段，观察局部故障是否会引起可用性问题。
+高可用的方案主要从冗余、取舍、系统运维3个方向考虑，同时需要有配套的值班机制和故障处理流程，当出现线上问题时，可及时跟进处理。
+
+❇ 高扩展的实践方案
+1、合理的分层架构：比如上面谈到的互联网最常见的分层架构，另外还能进一步按照数据访问层、业务逻辑层对微服务做更细粒度的分层（但是需要评估性能，会存在网络多一跳的情况）。
+2、存储层的拆分：按照业务维度做垂直拆分、按照数据特征维度进一步做水平拆分（分库分表）。
+3、业务层的拆分：最常见的是按照业务维度拆（比如电商场景的商品服务、订单服务等），也可以按照核心接口和非核心接口拆，还可以按照请求源拆（比如To C和To B，APP和H5）。
+
+
+G1垃圾回收器: 分代、增量、并发和并行、标记-整理算法和复制算法
+
+并发针对一个线程在多个任务切换
+并行针对的是多个线程同一时刻执行多个任务
+三色标记: 白-灰-黑  白色是垃圾对象
+
+
+讨论eureka和zk作为注册中心的区别时从架构上来说
+1)eureka是集群式
+2)zk是分布式的主从架构
+
+
+WeakHashMap
+
+

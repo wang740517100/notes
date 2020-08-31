@@ -1,0 +1,56 @@
+explain
+SELECT * FROM `fip_order` AS o 
+LEFT JOIN `fip_order_sales` AS s ON o.`id` = s.`order_id` 
+LEFT JOIN `fip_order_timeline` AS t ON o.`id` = t.`order_id` 
+LEFT JOIN `fip_order_loaner_info` AS li ON o.`id` = li.`order_id` 
+LEFT JOIN `fip_order_direct_sale` AS ds ON o.`id` = ds.`order_id` 
+WHERE o.id > 0 AND o.service_type_code NOT IN ('6!613!61301!002', '6!613!61301!005');
+
+#id
+1、id相同：执行顺序由上至下
+2、id不同：如果是子查询，id的序号会递增，id值越大优先级越高，越先被执行。
+
+#select_type
+simple: 是一个简单查询，不包含子查询或是union操作的查询
+primary: 查询中如果包含任何子查询，那么最外层的查询则被标记为PRIMAY
+subquery：当前表的查询是一个子查询
+dependent subquery: 当前的子查询是依赖外部结果的子查询
+union: Union操作的第二个或是之后的查询值为union
+dependent union: 当UNION做为子查询时，第二个或是第二个后的查询的select_type值就标记成DEPENDENT UNION
+union result: UNION产生的结果集，id值为null
+derived：出现在FORM子句中的子查询
+
+
+#type
+system：这个是const连接的一个特例，当查询的表只有一行时使用
+const: 当表中有且只有一行数据时，如对主键或者唯一索引查询时候，这个查询的性能也是很好的
+ref: 非唯一索引查找，返回匹配某个单独值的所有行
+eq_ref: 唯一索引或者主键查询，对于每个索引键，表中只有一条记录与之匹配
+ref_or_null: 类似于ref类型的查询，但是附加对NULL列的查询
+index_merge: 该连接类型表示使用了索引合并优化的方式
+range: 索引范围扫描，常见between、>、<这样的查询条件
+index: FULL index Scan 全索引扫描，同ALL的区别是，遍历的是索引树
+all:  FULL TALBLE Scan 全表扫描，这种方式效率最差
+
+
+possible_keys: 当前查询可能使用到的索引，并不一定会使用到
+
+key: 查询真正使用到的索引，如果没有使用到索引会显示null，select_type为index_merge时，这里可能出现两个以上的索引，其他的select_type这里只会出现一个key_len: 
+索引字段的最大可能长度,在一个联合索引里如果有3列，那么这3列的总字段长度是100个字节，key_len显示的可能小于100，比如只有30，这样就说明没有使用到联合索引的所
+有列，可能使用了一个列或两列key_len的长度由字段定义计算而来，并非数据的实际长度
+
+ref: 当前表在利用key列记录中的索引进行查询试用到的列或者常量
+
+rows: 表示mysql通过索引统计信息，估算的所需读取的行数，在关联查询时，rows列显示的是每一次嵌套查询时所需要的行数。rows值的大小是个统计抽样结果，依赖mysql的
+统计信息，并不十分准确
+
+filtered: 表示返回结果的行数占需要读取行数的百分比，值越大越好，filtered列的值依赖统计信息，并不十分准确
+
+#extra
+distinct：优化distinct操作，在找到第一匹配的元组后即停止找同样值的动作
+not exists:使用not exists来优化查询
+using filesort:使用额外操作进行排序，通常会出现在order by或者group by 查询中，出现这个值说明效率比较差
+using index：使用了覆盖索引进行查询
+using temporary: mysql需要使用临时表来处理查询，常见于排序，子查询，和分组查询
+usering where：需要在mysql服务器层使用where条件来过滤数据
+select tables optimized away: 直接通过索引来获取到数据，不用访问表，这种效率比较高
