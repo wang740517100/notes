@@ -1,5 +1,6 @@
 package cn.wangkf.monday;
 
+import cn.wangkf.tuesday.String;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 

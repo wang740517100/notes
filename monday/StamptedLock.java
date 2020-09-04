@@ -2,6 +2,8 @@ package cn.wangkf.monday;
 
 
 
+import cn.wangkf.tuesday.String;
+
 import java.util.Random;
 import java.util.concurrent.locks.StampedLock;
 

@@ -1,6 +1,8 @@
 package cn.wangkf.monday;
 
 
+import cn.wangkf.tuesday.String;
+
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;

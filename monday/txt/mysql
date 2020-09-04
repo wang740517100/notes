@@ -270,3 +270,12 @@ set optimizer_trace='enabled=on,one_line=on';
 run your sql1;
 select * from information_schema.optimizer_trace\G;
 set optimizer_trace='enabled=off,one_line=off';
+
+
+
+-------------------------- mysql为什么要实现最左匹配原则 --------------------------
+mysql创建复合索引的规则是首先会对复合索引的最左边的，也就是第一个name字段的数据进行排序，在第一个字段的排序基础上，
+然后再对后面第二个的cid字段进行排序。其实就相当于实现了类似 order by name cid这样一种排序规则。
+
+所以：第一个name字段是绝对有序的，而第二字段就是无序的了。所以通常情况下，直接使用第二个cid字段进行条件判断是用不到索引的，
+当然，可能会出现上面的使用index类型的索引。这就是所谓的mysql为什么要强调最左前缀原则的原因。

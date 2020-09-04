@@ -271,3 +271,12 @@ G1垃圾回收器: 分代、增量、并发和并行、标记-整理算法和复
 WeakHashMap
 
 
+XSS和CSRF攻击:
+CSRF（Cross-site request forgery）: 跨站请求伪造
+XSS（Cross Site Scripting）：跨域脚本攻击
+
+CSRF 和 XSS 的区别
+区别一：
+CSRF：需要用户先登录网站A，获取 cookie。XSS：不需要登录。
+区别二：（原理的区别）
+CSRF：是利用网站A本身的漏洞，去请求网站A的api。XSS：是向网站 A 注入 JS代码，然后执行 JS 里的代码，篡改网站A的内容
