@@ -1,7 +1,5 @@
 package cn.wangkf.monday;
 
-import cn.wangkf.tuesday.String;
-
 import java.io.IOException;
 import java.util.Arrays;
 

@@ -1,6 +1,5 @@
 package cn.wangkf.monday;
 
-import cn.wangkf.tuesday.String;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
