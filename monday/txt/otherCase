@@ -96,8 +96,8 @@ oom sof    ioexeception         npe
 
 
 6、排序
-Collections.sort() 使用MergeSort JDK1.6
-Collections.sort() 使用TimSort JDK1.7
+Collections.sort() 使用 MergeSort JDK1.6
+Collections.sort() 使用 TimSort JDK1.7  (TimSort是结合了合并排序（合并排序）和插入排序（插入排序）而得出的排序算法)
 
 
 7、object中8个方法
@@ -288,3 +288,29 @@ CSRF：是利用网站A本身的漏洞，去请求网站A的api。XSS：是向�
 2、便于复杂大团队的任务拆分协作
 缺点
 1、调用链复杂，管理成本高
+
+
+http是一种无状态的协议
+100 请求被接收继续处理
+200 返回成功
+301 网页被永久移动
+302 网页被临时移动
+
+400 服务器不理解的语法
+401 登录后未授权
+403 访问被禁止
+404 找不到路径
+
+500 服务器错误
+501 服务器不具备完成请求的功能
+502 错误的网关
+503 服务器暂时不可用
+
+
+Throwable、Error、Exception、RuntimeException 区别和联系各是什么？
+- Throwable是顶层接口，Error和Exception实现了Throwable
+- Error错误除了报告给用户没有办法处理
+- 将派生于Error或者RuntimeException的异常称为unchecked异常
+
+ps: 调用一个checked异常的方法，例如IOException，如果抛出所有的checked异常时无法通过编译的。程序运行过程中发现错误，利用throw语句抛出一个异常。
+对于unchecked异常，无非主要是两种情况要么是可以避免的（Runtime Exception），要么是不可控制的。这些也是需要声明异常的。

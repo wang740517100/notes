@@ -1,0 +1,55 @@
+1、模块化的好处
+- 解耦
+- 分工协同互不干扰
+- 便于高度复用
+
+2、Htttp协议
+- http1无状态协议 http1.1伪长连接 http2长连接
+- header body response
+
+3、hashmap和concurrenthashmap区别及两者的优缺点
+- 线程安全、数据结构、锁粒度
+
+4、对MySQL的了解，和oracle的区别
+- 大型应用、官方安全性和运维支持强
+- 中小型应用、轻量、mvcc解决脏读脏写重复读幻读
+
+5、对设计模式的看法和认知
+- 通用问题解决方案，符合开闭原则可扩展性高
+
+6、有哪些设计模式
+
+7、 如何实现分布式缓存
+- tomcat + redis
+- spring session + redis
+
+8、多线程如何避免死锁
+
+9、关于树的算法题-二叉树的锯齿形层次遍历：
+- http://www.lintcode.com/zh-cn/problem/binary-tree-zigzag-level-order-traversal/
+
+10、Java的垃圾回收机制
+
+11、对Runtime的了解
+
+12、LintCode 算法题 - 最小子串覆盖。原题链接：
+- http://www.lintcode.com/zh-cn/problem/minimum-window-substring/
+
+
+为什么要选择编程这条路
+
+何时开始编程
+
+如何进行自学
+
+阅读过那些书籍
+
+项目最终实现效果
+
+项目具体部分使用的设计模式并简述选择理由
+
+项目有何需改进之处并初拟改进方案
+
+项目运行过程中成员是否曾就某一点发生争执？
+
+作为Leader你是如何解决的？具体事例？

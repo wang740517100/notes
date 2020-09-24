@@ -1,7 +1,9 @@
 package cn.wangkf.monday;
 
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 public class Demo {
 
@@ -19,6 +21,9 @@ public class Demo {
         a.remove("b");
 
         a.remove();
+
+        Map<String, String> aaaa = new HashMap<>();
+        aaaa.put("a", "a");
 
         System.out.println(11);
     }
