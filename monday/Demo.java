@@ -4,11 +4,14 @@ package cn.wangkf.monday;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class Demo {
 
 
     public static void main(String[] args)  {
+
+
 
         LinkedList<String> a = new LinkedList<>();
 

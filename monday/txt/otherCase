@@ -311,6 +311,40 @@ Throwable、Error、Exception、RuntimeException 区别和联系各是什么？
 - Throwable是顶层接口，Error和Exception实现了Throwable
 - Error错误除了报告给用户没有办法处理
 - 将派生于Error或者RuntimeException的异常称为unchecked异常
-
 ps: 调用一个checked异常的方法，例如IOException，如果抛出所有的checked异常时无法通过编译的。程序运行过程中发现错误，利用throw语句抛出一个异常。
 对于unchecked异常，无非主要是两种情况要么是可以避免的（Runtime Exception），要么是不可控制的。这些也是需要声明异常的。
+
+Htttp协议
+- http1.0是一个无状态协议，在服务器响应后会断开tcp连接。ps某些服务支持Connection: keep-alive。
+- http1.1标准默认开启持久连接，节省了重新连接和ssl带来的开销。
+- http2.0标准支持长连接，一个tcp请求可以在同一时刻处理多个http请求。
+- dns域名解析  传输层  网络层 数据链路层 物理层
+- dispatchServelt、handleMapping(handle)、handleAdapter(modelAndView)、ViewReslover(view)
+
+dns解析过程：
+浏览器缓存 -> 本地hosts文件 -> 本地域名服务器 -> 根域名服务器 返回 网站名注册的域名服务器
+
+TCP相对于UDP协议的特点是：
+面向连接: 三次握手四次挥手
+字节流: 数据放在放在缓冲区中和读写的次数没有关系。(ps:UDP就是写一个data读一个data)
+可靠传输: 发送应答机制, 超时重传机制, 报文包的有序性, 拥塞控制
+ps: UDP协议则和IP协议一样提供的是不可靠的服务。它们都需要上层协议来处理数据确认和超时重传。
+https://blog.csdn.net/wodewutai17quiet/article/details/82252454
+
+三次握手：
+client和server都要确保自己可以发送和接收信息的最短次数是3次
+
+四次挥手:
+client -> server   我要断开连接了?
+server -> client   还有一些信息在发送，等一会。
+server -> client   我断开连接了。
+client -> server   可以断开连接了。
+
+
+aop的原理：
+- 被代理抽象接口 被代理具体类 动态代理器
+- aop使用了动态代理使用反射实现，可以灵活组合被代理对象和动态代理器
+
+动态代理和cglib的区别：
+动态代理机制只能代理实现了接口的类，cglib是针对类来实现代理的，原理是对指定的目标类生成一个子类，
+并覆盖其中方法实现增强，因为采用的是继承，所以不能对final修饰的类进行代理。

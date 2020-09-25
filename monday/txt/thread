@@ -1007,16 +1007,15 @@ running: yeild() -> runnable, sleep/锁/io -> blocked
 2)run()还使用了策略模式，将线程的调度和业务逻辑分离。
 
 
-
 线程池工作流程：
-1 当一个任务通过submit或者execute方法提交到线程池的时候，如果当前池中线程数（包括闲置线程）小于coolPoolSize，则创建一个线程执行该任务。
-2 如果当前线程池中线程数已经达到coolPoolSize，则将任务放入等待队列。
-3 如果任务不能入队，说明等待队列已满，若当前池中线程数小于maximumPoolSize，则创建一个临时线程（非核心线程）执行该任务。
-4 如果当前池中线程数已经等于maximumPoolSize，此时无法执行该任务，根据拒绝执行策略处理。
+一个task进来:
+如果当前线程数 < 核心线程数，创建一个核心线程执行该task
+如果当前线程数 = 核心线程数，就把task加入到等待队列
+等待队列已满 && 如果当前线程数 < 最大线程数，创建一个空闲线程执行该task
+等待队列已满 && 如果当前线程数 = 最大线程数，按拒绝策略执行该task
+
 注意：当池中线程数大于coolPoolSize，超过keepAliveTime时间的闲置线程会被回收掉。
-回收的是非核心线程，核心线程一般是不会回收的。如果设置allowCoreThreadTimeOut(true)，
-则核心线程在闲置keepAliveTime时间后也会被回收。
-任务队列是一个阻塞队列，线程执行完任务后会去队列取任务来执行，如果队列为空，线程就会阻塞，直到取到任务。
+如果设置allowCoreThreadTimeOut(true)，则核心线程在闲置keepAliveTime时间后也会被回收。
 
 线程池里的线程是如何被重复使用的
 https://www.cnblogs.com/jimmyfan/articles/11424332.html

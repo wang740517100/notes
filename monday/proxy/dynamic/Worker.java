@@ -1,4 +1,4 @@
-package cn.wangkf.monday.proxy;
+package cn.wangkf.monday.proxy.dynamic;
 
 /**
  * Created by stanley.wang on 2020/6/12.

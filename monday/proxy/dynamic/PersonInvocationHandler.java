@@ -1,9 +1,10 @@
-package cn.wangkf.monday.proxy;
+package cn.wangkf.monday.proxy.dynamic;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 /**
+ * 代理要做的事情定义
  * Created by stanley.wang on 2020/6/12.
  */
 public class PersonInvocationHandler<T> implements InvocationHandler {
@@ -13,6 +14,7 @@ public class PersonInvocationHandler<T> implements InvocationHandler {
     public PersonInvocationHandler(T t) {
         this.t = t;
     }
+
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

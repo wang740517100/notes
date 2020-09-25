@@ -1,11 +1,12 @@
 1、模块化的好处
-- 解耦
-- 分工协同互不干扰
-- 便于高度复用
+- 解耦、分工协同互不干扰、便于高度复用
 
 2、Htttp协议
-- http1无状态协议 http1.1伪长连接 http2长连接
-- header body response
+- http1.0是一个无状态协议，在服务器响应后会断开tcp连接。ps某些服务支持Connection: keep-alive。
+- http1.1标准默认开启持久连接，节省了重新连接和ssl带来的开销。
+- http2.0标准支持长连接，一个tcp请求可以在同一时刻处理多个http请求。
+- dns域名解析  传输层  网络层 数据链路层 物理层
+- dispatchServelt接收请求和响应、handleMapping(handle)、handleAdapter(modelAndView)、ViewReslover(view)
 
 3、hashmap和concurrenthashmap区别及两者的优缺点
 - 线程安全、数据结构、锁粒度
@@ -18,6 +19,7 @@
 - 通用问题解决方案，符合开闭原则可扩展性高
 
 6、有哪些设计模式
+- 单例模式 工厂模式 代理模式 模板方法 装饰模式 观察者模式
 
 7、 如何实现分布式缓存
 - tomcat + redis
