@@ -3,12 +3,14 @@ package cn.wangkf.monday.sort;
 import java.util.Arrays;
 
 /**
+ * 快速排序 nlogn logn 不稳定的
+ * 1、把数组的第一个数值作为基准数
+ * 2、定义左哨兵和右哨兵，左哨兵向右找到比基准数大的数，右哨兵向左找到比基准数小的数，交换位置
+ * 3、循环交换知道两个哨兵相遇，交换基准数和相遇位置的数
+ * 4、以基准数为准把左右边分为两个数组递归执行上面步骤
+ *
  * Created by stanley.wang on 2020/6/17.
  */
-
-
-
-
 public class QuickSort {
 
     public static void main(String[] args) {
