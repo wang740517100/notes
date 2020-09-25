@@ -1,4 +1,4 @@
-package cn.wangkf.monday.ecs;
+package cn.wangkf.monday.strategy;
 
 /**
  * Created by stanley.wang on 2020/8/3.

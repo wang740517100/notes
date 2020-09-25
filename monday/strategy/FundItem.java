@@ -1,4 +1,4 @@
-package cn.wangkf.monday.ecs;
+package cn.wangkf.monday.strategy;
 
 import java.math.BigDecimal;
 

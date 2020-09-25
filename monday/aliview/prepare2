@@ -26,6 +26,9 @@
 - spring session + redis
 
 8、多线程如何避免死锁
+- 多线程按顺序加锁
+- 设置超时抛出异常
+- 死锁检测机制
 
 9、关于树的算法题-二叉树的锯齿形层次遍历：
 - http://www.lintcode.com/zh-cn/problem/binary-tree-zigzag-level-order-traversal/
@@ -33,6 +36,7 @@
 10、Java的垃圾回收机制
 
 11、对Runtime的了解
+- Java提供获取系统环境信息的单例，使用getRuntime得到
 
 12、LintCode 算法题 - 最小子串覆盖。原题链接：
 - http://www.lintcode.com/zh-cn/problem/minimum-window-substring/
