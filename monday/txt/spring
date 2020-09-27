@@ -1,28 +1,10 @@
-BeanDefinition: 存储bean标签的信息如bean的作用域、bean的注入模型、bean是否是懒加载等, 用来生成bean实例
-BeanFactoryPostProcessor：BeanFactory后置处理器, 是对BeanDefinition对象进行修改。（）
-BeanPostProcessor：Bean后置处理器，是对生成的Bean对象进行修改。
+微服务是仅关注于一块功能的松耦合架构，它的特点是单个服务功能单一，服务之间没有强关联。
+优点：
+1、跨语言、松耦合、特定功能
+2、便于复杂大团队的任务拆分协作
+缺点
+1、调用链复杂，管理成本高
 
-普通类的实例化过程:
-加载(方法区) -> 验证(方法区) -> 准备(方法区) ->  解析(方法区) -> 初始化(堆)
-
-bean的生命周期:
-实例化 -> 属性注入 -> 初始化 -> 销毁
-
-bean的实例化和初始化: 初始化不可干预, 实例化可以干预
-BeanFactoryPostProcessor是spring提供的一个扩展点可以让程序员干预bean工厂的初始化过程, beanFactory怎么new出来的(实例化)
-BeanFactoryPostProcessor是干预不了的, 但是beanFactory new出来之后各种属性的填充或者修改(初始化)是可以干预的
-
-BeanFactory是一个接口
-BeanFactory bf = new ClassPathXmlApplicationContext("student.xml");
-
-实现BeanFactory的类产生的bean是FactoryBean
-Student studentBean = (Student) bf.getBean("studentFactoryBean");
-
-
-RestTemplate
-RedisTemplate
-RabbitTemplate
-ElasticsearchTemplate
 ---------------------------------- spring的循环依赖 ----------------------------------
 class A {
 	@Autowired
@@ -211,3 +193,51 @@ https://blog.csdn.net/weixin_40423597/article/details/80643990
 
 获取spring bean的方式
 ApplicationContext.getBean(name 或者 clazz)
+
+
+
+----------------------------------  aop的原理 ----------------------------------
+- 被代理抽象接口 被代理具体类 动态代理器
+- aop使用了动态代理使用反射实现，可以灵活组合被代理对象和动态代理器
+
+动态代理和cglib的区别：
+动态代理机制只能代理实现了接口的类，cglib是针对类来实现代理的，原理是对指定的目标类生成一个子类，
+并覆盖其中方法实现增强，因为采用的是继承，所以不能对final修饰的类进行代理。
+
+两阶段提交：
+1. 准备阶段（Prepare phase）：事务管理器给每个参与者发送Prepare消息，每个数据库参与者在本地执行事务，
+并写本地的Undo/Redo日志，此时事务没有提交。（Undo日志是记录修改前的数据，用于数据库回滚，Redo日志是
+记录修改后的数据，用于提交事务后写入数据文件）
+
+2. 提交阶段（commit phase）：如果事务管理器收到了参与者的执行失败或者超时消息时，直接给每个参与者发送
+回滚(Rollback)消息；否则，发送提交(Commit)消息；参与者根据事务管理器的指令执行提交或者回滚操作，并释放事务
+处理过程中使用的锁资源。注意:必须在最后阶段释放锁资源。
+
+
+---------------------------------- 其它  ----------------------------------
+
+BeanDefinition: 存储bean标签的信息如bean的作用域、bean的注入模型、bean是否是懒加载等, 用来生成bean实例
+BeanFactoryPostProcessor：BeanFactory后置处理器, 是对BeanDefinition对象进行修改。（）
+BeanPostProcessor：Bean后置处理器，是对生成的Bean对象进行修改。
+
+普通类的实例化过程:
+加载(方法区) -> 验证(方法区) -> 准备(方法区) ->  解析(方法区) -> 初始化(堆)
+
+bean的生命周期:
+实例化 -> 属性注入 -> 初始化 -> 销毁
+
+bean的实例化和初始化: 初始化不可干预, 实例化可以干预
+BeanFactoryPostProcessor是spring提供的一个扩展点可以让程序员干预bean工厂的初始化过程, beanFactory怎么new出来的(实例化)
+BeanFactoryPostProcessor是干预不了的, 但是beanFactory new出来之后各种属性的填充或者修改(初始化)是可以干预的
+
+BeanFactory是一个接口
+BeanFactory bf = new ClassPathXmlApplicationContext("student.xml");
+
+实现BeanFactory的类产生的bean是FactoryBean
+Student studentBean = (Student) bf.getBean("studentFactoryBean");
+
+
+RestTemplate
+RedisTemplate
+RabbitTemplate
+ElasticsearchTemplate
