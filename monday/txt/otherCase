@@ -209,7 +209,12 @@ ps: 调用一个checked异常的方法，例如IOException，如果抛出所有�
 对于unchecked异常，无非主要是两种情况要么是可以避免的（Runtime Exception），要么是不可控制的。这些也是需要声明异常的。
 
 
-
+本文记录linux系统中文件传输的多种方式
+FTP ： FTP是文件服务器，可实现文件的上传下载，存储等功能，但本文不打算介绍ftp的使用。
+scp： scp能够将不同主机的文件进行相互传输，使用简单方便。
+rz ： 用于linux与windows之间的文件上传
+sz ： 用于linux与windows之间的文件下载
+rsync ： rsync是文件同步工具，结合inotify可以实现文件的同步，备份功能。
 
 
 
