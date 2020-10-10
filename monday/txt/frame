@@ -56,6 +56,9 @@ CSRF 和 XSS 的区别
 - CSRF：是利用网站A本身的漏洞，去请求网站A的api。XSS：是向网站 A 注入 JS代码，
   然后执行 JS 里的代码，篡改网站A的内容
 
+DoS(Denial of Service，拒绝服务攻击)  Syn-Flood，基于tcp三次握手客户端不发生确认信息
+DDoS(Distributed Denial of Service，分布式拒绝服务)  提升服务器性能，验证码
+DRDoS((Distributed Reflection Denial of Service，分布式反射拒绝服务)
 
 加解密算法:
 单向散列加密(加盐): MD5 SHA

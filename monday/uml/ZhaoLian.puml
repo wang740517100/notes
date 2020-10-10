@@ -1,0 +1,114 @@
+@startuml
+
+interface LoanOrderServiceApi {
+    // 贷款通用查询API
+}
+
+interface ZhaoLianServiceApi {
+    // 招联对外API
+}
+
+class LoanOrderService {
+    // 授信结果通用查询
+    // 创建贷授信结果
+    + queryPage()
+    + findById()
+    + queryList()
+    - create()
+    + createOrder()
+}
+
+class CreditResultService {
+    // 放款记录通用查询
+    // 创建放款记录
+    + queryPage()
+    + findById()
+    + queryList()
+    - create()
+    - createCredit()
+}
+
+class LengdingService {
+    // 放款通用查询
+    // 创建放款
+    + queryPage()
+    + findById()
+    + queryList()
+    - create()
+    - createLengding()
+}
+
+class RepaymentService {
+    // 还款计划通用查询
+    // 创建招联还款计划
+    + queryPage()
+    + findById()
+    + queryList()
+    - create()
+    - createRepayment()
+}
+
+
+interface LoanStrategyService {
+    // 模板接口
+    // 1、创建贷款单
+    // 2、创建授信
+    // 3、创建放款
+    // 4、创建还款计划
+    createOrder()
+    createCredit()
+    createLending()
+    createRepayment()
+}
+
+
+class ZhaoLianServiceImpl {
+    // 招联对外接口
+    + jointLogin()
+    + jumpCredit()
+    + transmitReport()
+
+    + createOrder()
+    + createCredit()
+    + createLending()
+    + createRepayment()
+
+}
+
+class LoanOrderServiceImpl {
+    // 贷款单通用接口
+    + queryOrderPage()
+    + findOrderById()
+    + queryOrderList()
+
+    + queryCreditPage()
+    + findCreditById()
+    + queryCreditList()
+
+    + queryLendingPage()
+    + findLendingById()
+    + queryLendingList()
+
+    + queryRepaymentPage()
+    + findRepaymentById()
+    + queryRepaymentList()
+}
+
+LoanOrderServiceApi  <-- LoanOrderServiceImpl
+ZhaoLianServiceApi   <-- ZhaoLianServiceImpl
+
+LoanOrderServiceImpl -> LoanOrderService
+LoanOrderServiceImpl -> CreditResultService
+LoanOrderServiceImpl -> LengdingService
+LoanOrderServiceImpl -> RepaymentService
+
+
+LoanOrderService <- ZhaoLianServiceImpl
+CreditResultService <- ZhaoLianServiceImpl
+LengdingService <- ZhaoLianServiceImpl
+RepaymentService <- ZhaoLianServiceImpl
+
+LoanStrategyService  <|- ZhaoLianServiceImpl
+
+
+@enduml
