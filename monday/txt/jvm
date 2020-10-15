@@ -263,6 +263,7 @@ https://blog.csdn.net/Jack_PJ/article/details/88016471
 
 25、线上GC问题监控
 jps -v  查看java进程的pid
+
 jstat -gc pid  查看java进程的内存和gc
 S0C: from区的大小
 S1C: to区的大小
@@ -280,6 +281,7 @@ FGC: 系统运行迄今为止的Full GC次数
 FGCT:Full GC的耗时
 GCT: 所有GC的耗时
 
+jdk1.5之后:
 jstat -gc pid 1000 10  每隔1s更新出来最新的一行统计信息共执行10次
 
 jmap -histo pid  打印各种对象占用内存空间的大小降序排列, 快速定位哪个对象占用内存
@@ -287,6 +289,11 @@ jmap -dump:live,format=b,file=dump.hprof pid 生成快照使用MermoryAnalyzer
 
 jmap -heap pid 打印堆内存信息, 还没jstat信息全一般不用
 jhat dump.hprof -port 7000  启动jhat服务器分析dump快照, 在浏览器访问这台机器的7000端口号就可以了
+
+jconsole JMX的实时图形化监测工具，包括了Java 程序的内存使用，Heap size, 线程的状态，类的分配状态和空间使用等等
+        使用需要配置linux端连接参数，然后在windows直接打开jconsole.exe连接远端就行
+
+jinfo -sysprops 21768 可以从core文件里面知道崩溃的Java应用程序的配置信息
 
 
 26、CMS和G1的区别：

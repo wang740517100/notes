@@ -1,10 +1,6 @@
 package cn.wangkf.monday;
 
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.*;
 
 public class Demo {
 
@@ -12,24 +8,20 @@ public class Demo {
     public static void main(String[] args)  {
 
 
+        Integer a = new Integer(56);
 
-        LinkedList<String> a = new LinkedList<>();
-
-        a.add("a");
-
-        a.add("b");
-
-        a.add("c");
-
-        a.remove("b");
-
-        a.remove();
-
-        Map<String, String> aaaa = new HashMap<>();
-        aaaa.put("a", "a");
-
-        System.out.println(11);
+        List<Integer> numArr = new ArrayList<>();
+        numArr.add(1);
+        numArr.add(2);
+        numArr.add(3);
+        numArr.add(4);
+        Iterator<Integer> iterator = numArr.iterator();
+        while (iterator.hasNext()) {
+//            numArr.removeIf(num -> num == 3);
+            Integer num = iterator.next();
+            if (num == 3) {
+                iterator.remove();
+            }
+        }
     }
-
-
 }
