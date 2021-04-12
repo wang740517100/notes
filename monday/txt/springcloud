@@ -11,3 +11,13 @@ lease-renewal-interval-in-seconds: 10
 #Eureka服务端在收到最后一次心跳之后等待的时间上限，单位为秒，超过则剔除（客户端告诉服务端按照此规则等待自己），默认90
 lease-expiration-duration-in-seconds: 30
 
+
+服务注册：服务提供者向eureka server端注册该服务信息
+服务续约：client端向server端发送心跳信息告知自己在线。（发送心跳间隔时间）
+服务剔除：client端不再有心跳信息时，server端会将注册列表的client剔除。（服务失效时间）
+服务下线：client关闭时会使用钩子函数向server发消息删除注册列表中的clent信息
+自我保护机制：server故障导致大量服务被剔除时会触发自我保护机制（15分钟内心跳失败比例低于85时）
+ - server端不再剔除因长时间没有收到心跳应该过期的服务
+ - server仍然可以接收新服务的注册和查询，但不会同步至其它节点
+ - 当网络稳定时，server节点注册信息会同步至其它节点
+手动删除eureka注册服务： Delete: http://{ip}:{port}/eureke/apps/{Application}/{status}
